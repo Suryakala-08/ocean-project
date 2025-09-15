@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>🌊 Ocean Hazard & Flood Monitoring</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f0f8ff;
+        }
+
+        h1 {
+            text-align: center;
+            color: #0077cc;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        form {
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        label {
+            font-weight: bold;
+            margin-top: 10px;
+            display: block;
+        }
+
+        textarea, input[type="text"], select, input[type="file"] {
+            width: 100%;
+            margin-top: 5px;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+
+        button {
+            margin-top: 15px;
+            padding: 10px;
+            width: 100%;
+            border: none;
+            border-radius: 6px;
+            background-color: #0077cc;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #005fa3;
+        }
+
+        #geoBtn {
+            background-color: #28a745;
+        }
+
+        #geoBtn:hover {
+            background-color: #1e7e34;
+        }
+
+        #helpBtn {
+            background-color: #ffc107;
+            color: black;
+        }
+
+        #helpBtn:hover {
+            background-color: #e0a800;
+        }
+
+        #map {
+            height: 500px;
+            border-radius: 8px;
+        }
+
+        /* Help Box */
+        #helpBox {
+            display: none;
+            position: fixed;
+            top: 20%;
+            left: 50%;
+            transform: translate(-50%, -20%);
+            width: 320px;
+            background: #fff;
+            border: 2px solid #28a745;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0px 4px 10px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+
+        #helpBox h3 {
+            margin-top: 0;
+            color: #28a745;
+        }
+
+        #helpBox button {
+            background-color: #dc3545;
+            color: white;
+            padding: 6px 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #helpBox button:hover {
+            background-color: #a71d2a;
+        }
+
+        marquee {
+            color: #d9534f;
+            font-weight: bold;
+        }
+
+        /* Share Box */
+        #shareBox {
+            display: none;
+            position: fixed;
+            top: 25%;
+            left: 50%;
+            transform: translate(-50%, -25%);
+            width: 300px;
+            background: #fff;
+            border: 2px solid #0077cc;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0px 4px 10px rgba(0,0,0,0.2);
+            z-index: 1000;
+            text-align: center;
+        }
+
+        #shareBox h3 {
+            margin-top: 0;
+            color: #0077cc;
+        }
+
+        #shareBox button {
+            margin: 5px 0;
+            width: 90%;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🌊 Ocean Hazard Reporting & Live Flood Map</h1>
+
+    <div class="container">
+        <!-- Hazard Report Form -->
+        <form id="hazardForm" enctype="multipart/form-data">
+            <label for="description">📝 Description:</label>
+            <textarea id="description" name="description" required></textarea>
+
+            <label for="category">⚠ Hazard Category:</label>
+            <select id="category" name="category" required>
+                <option value="">-- Select Category --</option>
+                <option value="Coastal Damage">Coastal Damage</option>
+                <option value="Tsunami">Tsunami</option>
+                <option value="Heavy Waves">Heavy Waves</option>
+                <option value="Flood">Flood</option>
+                <option value="Earthquake">Earthquake</option>
+                <option value="Other">Other</option>
+            </select>
+
+            <label for="severity">🔥 Severity Level:</label>
+            <select id="severity" name="severity" required>
+                <option value="">-- Select Severity --</option>
+                <option value="Low">Low</option>
+                <option value="Medium">Medium</option>
+                <option value="High">High</option>
+            </select>
+
+            <label for="latitude">📍 Latitude:</label>
+            <input type="text" id="lat" name="latitude" readonly required>
+
+            <label for="longitude">📍 Longitude:</label>
+            <input type="text" id="lng" name="longitude" readonly required>
+
+            <button type="button" id="geoBtn">📡 Use My Location</button>
+
+            <label for="image">📷 Upload Image (optional):</label>
+            <input type="file" id="image" name="image" accept="image/*">
+
+            <button type="submit">🚨 Submit Report</button>
+            <button type="button" id="helpBtn">❓ Need Help</button>
+        </form>
+
+        <!-- Map Section -->
+        <div id="map"></div>
+    </div>
+
+    <!-- Help Box -->
+    <div id="helpBox">
+        <h3>📞 Help & Instructions</h3>
+        <marquee behavior="scroll" direction="left">
+            Emergency Helpline: <strong>1800-123-456</strong>
+        </marquee>
+        <p>
+            👉 Click on the map to set your location.<br>
+            👉 Or press "📡 Use My Location" to auto-fill.<br>
+            👉 Fill out the form with hazard details.<br>
+            👉 Add a photo (optional).<br>
+            👉 Press "Submit Report" to send it.<br>
+            🚨 For immediate help, call the helpline.
+        </p>
+        <button id="closeHelp">Close</button>
+    </div>
+
+    <!-- Share Box -->
+    <div id="shareBox">
+        <h3>📤 Share Report</h3>
+        <button id="shareTwitter">🐦 Share on Twitter</button>
+        <button id="shareWhatsApp">💬 Share on WhatsApp</button>
+        <button id="shareFacebook">📘 Share on Facebook</button>
+        <button id="closeShare">Close</button>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+    <!-- JavaScript -->
+    <script>
+        const map = L.map('map').setView([20.5937, 78.9629], 5); // India center
+
+        // Base map
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        let clickMarker;
+        let lastMessage = "";
+
+        // --- 🌊 Live Flood Layer (demo WMS from NASA/IMERG rainfall proxy) ---
+        const floodLayer = L.tileLayer.wms("https://gis.floodobservatory.org/geoserver/wms", {
+            layers: 'floods:activefloods',   // Example layer name (change if API differs)
+            format: 'image/png',
+            transparent: true,
+            attribution: "Global Flood Observatory"
+        }).addTo(map);
+
+        // Set coordinates from map click
+        map.on('click', function(e) {
+            setLatLng(e.latlng.lat, e.latlng.lng, "📍 Selected Location");
+        });
+
+        function setLatLng(lat, lng, label) {
+            document.getElementById('lat').value = lat.toFixed(6);
+            document.getElementById('lng').value = lng.toFixed(6);
+
+            if (clickMarker) {
+                map.removeLayer(clickMarker);
+            }
+
+            clickMarker = L.marker([lat, lng]).addTo(map)
+                .bindPopup(label).openPopup();
+        }
+
+        // Geolocation button
+        document.getElementById('geoBtn').addEventListener('click', () => {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(position => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    setLatLng(lat, lng, "📡 My Location");
+                    map.setView([lat, lng], 12);
+                }, () => {
+                    alert("Unable to retrieve location.");
+                });
+            } else {
+                alert("Geolocation not supported.");
+            }
+        });
+
+        // Help pop-up
+        document.getElementById('helpBtn').addEventListener('click', () => {
+            document.getElementById('helpBox').style.display = 'block';
+        });
+
+        document.getElementById('closeHelp').addEventListener('click', () => {
+            document.getElementById('helpBox').style.display = 'none';
+        });
+
+        // Form submission (with share box)
+        document.getElementById('hazardForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const desc = document.getElementById('description').value;
+            const category = document.getElementById('category').value;
+            const severity = document.getElementById('severity').value;
+            const lat = document.getElementById('lat').value;
+            const lng = document.getElementById('lng').value;
+
+            lastMessage = `🚨 Ocean Hazard Report 🚨
+📝 ${desc}
+⚠ Category: ${category}
+🔥 Severity: ${severity}
+📍 Location: ${lat}, ${lng}`;
+
+            // Show share options
+            document.getElementById('shareBox').style.display = 'block';
+
+            // Reset form + map marker
+            this.reset();
+            document.getElementById('lat').value = '';
+            document.getElementById('lng').value = '';
+            if (clickMarker) map.removeLayer(clickMarker);
+        });
+
+        // Share buttons
+        document.getElementById('shareTwitter').addEventListener('click', () => {
+            const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(lastMessage)}`;
+            window.open(url, '_blank');
+        });
+
+        document.getElementById('shareWhatsApp').addEventListener('click', () => {
+            const url = `https://wa.me/?text=${encodeURIComponent(lastMessage)}`;
+            window.open(url, '_blank');
+        });
+
+        document.getElementById('shareFacebook').addEventListener('click', () => {
+            const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(lastMessage)}`;
+            window.open(url, '_blank');
+        });
+
+        document.getElementById('closeShare').addEventListener('click', () => {
+            document.getElementById('shareBox').style.display = 'none';
+        });
+    </script>
+</body>
+</html>
